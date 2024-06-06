@@ -21,14 +21,14 @@ struct MyEvent {
 
 ### Creating an `nes::event_holder`
 Event holders are responsible for 'holding' (and owning) the event instance that is going to be dispatched to the listeners. You can create an `nes::event_holder` like so:
-```
+```C++
 auto event = nes::make_holder<MyEvent>();
 ```
 If your event type requires parameters or you need to pass in data to the constructor of the event type, you can pass them in as function arguments to `nes::make_holder` in the same way you can with something like `std::make_unique`.
 
 ### Triggering events
 Triggering (or dispatching) events is really simple, and can be done in a mere two lines of code. The first to create the `nes::event_holder` (as seen above), and the second to dispatch it.
-```
+```C++
 auto event = nes::make_holder<MyEvent>();
 dispatcher.trigger(event);
 ```
@@ -39,7 +39,7 @@ There are many ways to listen for events. All of which require the event type to
 
 #### Listening for events with a class/struct member function
 This is probably the best way to listen for events if you're using an object-oriented pattern in your code. You can give the class the instance of the `nes::event_dispatcher` however you'd like, but for this example I'm just passing it down in the constructor.
-```
+```C++
 struct SomeClass {
 	explicit SomeClass(nes::event_dispatcher& dispatcher) : mDispatcher{dispatcher} {
 		dispatcher.listen<MyEvent, &SomeClass::onMyEvent>(this);
@@ -59,7 +59,7 @@ The `nes::event_dispatcher::listen` function takes in the event type to listen f
 
 #### Listening for events with a lambda object
 This is a decent way to listen for events, but from here on, you won't be able to create some kind of destructor that automatically deafens your events. You'll have to **manually deafen your event listener when you don't need it**.
-```
+```C++
 auto callback = [](MyEvent& event) {
     std::cout << "Lambda callback!" << std::endl;
 };
@@ -72,7 +72,7 @@ dispatcher.deafen<MyEvent>(callback);
 
 #### Listening for events with lambda directly
 This is probably the most convenient way to listen for an event, but this gives ownership of the lambda directly to the `nes::event_dispatcher` and **you won't be able to deafen the callback**. This could lead to some leaking issues if you're not careful!
-```
+```C++
 dispatcher.listen<MyEvent>([](MyEvent& event) {
     std::cout << "Lambda callback!" << std::endl;
 });
@@ -80,7 +80,7 @@ dispatcher.listen<MyEvent>([](MyEvent& event) {
 
 ### Event Priorities
 By default, this library defines an `nes::event_priotity` enum. The values are `FIRST`, `NORMAL` and `LAST` by default. When an event is triggered, callbacks will be invoked in the order of their priorities first, then in a non-deterministic order after. You can specify the priority of the callback when listening for events by passing it in as the last template argument.
-```
+```C++
 struct SomeClass {
 	explicit SomeClass(nes::event_dispatcher& dispatcher) : mDispatcher{dispatcher} {
 		dispatcher.listen<MyEvent, &SomeClass::onMyFirstEvent, nes::event_priority::FIRST>(this);
@@ -106,7 +106,7 @@ private:
 };
 ```
 By default, the priority is set to `nes::event_priority::NORMAL`. If you need more event priorities, you can define the `NES_PRIORITY_TYPE` with your own priority enum. It is expected that the `NORMAL` priority is available, so you'll probably want to define it in your own priority enum. Additionally, ensure to define the macro *before* including the header.
-```
+```C++
 enum struct MyCustomPriorities {
 	IMMEDIATE,
 	HIGH,
