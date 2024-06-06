@@ -9,7 +9,7 @@ if (NOT TARGET NES)
 endif ()
 target_include_directories(nuvola_event_system INTERFACE ${CMAKE_CURRENT_LIST_DIR}/include)
 
-option(BUILD_NES_TESTS "Build tests" ON)
+option(BUILD_NES_TESTS "Build tests" OFF)
 if(BUILD_NES_TESTS)
     add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/test)
 endif ()
