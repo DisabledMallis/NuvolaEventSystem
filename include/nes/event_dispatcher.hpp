@@ -153,37 +153,37 @@ namespace nes {
 		using listener_t = event_listener<event_t>;
 
 		const std::vector<listener_t>& getListeners() const {
-			return this->listeners;
+			return this->mListeners;
 		}
 		template<auto handler, auto priority = event_priority::NORMAL, typename class_t = detail::extract_type<decltype(handler)>::class_t, typename wrapper_t = event_wrapper<event_t>>
 		void listen(class_t* instance) {
 			wrapper_t wrapper = [instance](event_t& e) {
 				(instance->*handler)(e);
 			};
-			listeners[priority].emplace_back(instance, std::move(wrapper), entt::type_hash<decltype(handler)>::value());
+			mListeners[priority].emplace_back(instance, std::move(wrapper), entt::type_hash<decltype(handler)>::value());
 		}
 		template<auto priority = event_priority::NORMAL, typename wrapper_t = event_wrapper<event_t>>
 		void listen(auto handler) {
 			wrapper_t wrapper = [handler](event_t& e) {
 				handler(e);
 			};
-			listeners[priority].emplace_back(nullptr, std::move(wrapper), entt::type_hash<decltype(handler)>::value());
+			mListeners[priority].emplace_back(nullptr, std::move(wrapper), entt::type_hash<decltype(handler)>::value());
 		}
 		template<typename handler_t, typename class_t = detail::extract_type<handler_t>::class_t>
 		void deafen(class_t* instance, handler_t&& handler) {
-			for (auto& [priority, theListeners]: listeners) {
+			for (auto& [priority, theListeners]: mListeners) {
 				theListeners.erase_if([&](auto& listener) -> bool { return listener.mMethodHash == entt::type_hash<handler_t>::value(); });
 			}
 		}
 		template<typename handler_t>
 		void deafen(handler_t handler) {
-			for (auto& [priority, theListeners]: listeners) {
+			for (auto& [priority, theListeners]: mListeners) {
 				theListeners.erase_if([&](auto& listener) -> bool { return listener.mMethodHash == entt::type_hash<handler_t>::value(); });
 			}
 		}
 		void trigger(holder_t& holder) {
 			magic_enum::enum_for_each<event_priority>([&](auto priority) -> void {
-				for (const auto& listener: listeners[priority]) {
+				for (const auto& listener: mListeners[priority]) {
 					listener.invoke(holder);
 				}
 			});
@@ -191,7 +191,7 @@ namespace nes {
 
 	private:
 		//The event listeners for this dispatcher
-		std::unordered_map<event_priority, listener_list<listener_t>> listeners;
+		std::unordered_map<event_priority, listener_list<listener_t>> mListeners;
 	};
 
 	//The main event dispatcher, use this to listen for and dispatch events
