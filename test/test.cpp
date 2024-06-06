@@ -1,4 +1,4 @@
-
+/*
 enum struct MyCustomPriorities {
 	Immediate,
 	High,
@@ -7,7 +7,7 @@ enum struct MyCustomPriorities {
 	Last
 };
 #define NES_PRIORITY_TYPE MyCustomPriorities
-#define NES_PRIORITY_TRAITS template<> struct nes::event_priority_traits<NES_PRIORITY_TYPE> { using priority_type = NES_PRIORITY_TYPE; static constexpr priority_type default_value = priority_type::Regular; };
+#define NES_PRIORITY_TRAITS template<> struct nes::event_priority_traits<NES_PRIORITY_TYPE> { using priority_type = NES_PRIORITY_TYPE; static constexpr priority_type default_value = priority_type::Regular; };*/
 #include <nes/event_dispatcher.hpp>
 
 #include <iostream>
@@ -18,9 +18,9 @@ struct MyEvent {
 
 struct SomeClass {
 	explicit SomeClass(nes::event_dispatcher& dispatcher) : mDispatcher{dispatcher} {
-		dispatcher.listen<MyEvent, &SomeClass::onMyFirstEvent, nes::event_priority::Immediate>(this);
+		dispatcher.listen<MyEvent, &SomeClass::onMyFirstEvent, nes::event_priority::FIRST>(this);
 		dispatcher.listen<MyEvent, &SomeClass::onMyNormalEvent>(this);
-		dispatcher.listen<MyEvent, &SomeClass::onMyLastEvent, nes::event_priority::Last>(this);
+		dispatcher.listen<MyEvent, &SomeClass::onMyLastEvent, nes::event_priority::LAST>(this);
 	}
 	~SomeClass() {
 		mDispatcher.deafen<MyEvent, &SomeClass::onMyFirstEvent>(this);

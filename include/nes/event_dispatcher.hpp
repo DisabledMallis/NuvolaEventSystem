@@ -33,8 +33,8 @@ namespace nes {
 	template<typename priority_t> struct event_priority_traits { using priority_type = priority_t; };
 
 #ifndef NES_PRIORITY_TYPE
-	using event_priority = standard_event_priority;
-	template<> struct event_priority_traits<event_priority> { using priority_type = priority_t; static constexpr priority_type default_value = priority_type::NORMAL; };
+	using event_priority = detail::standard_event_priority;
+	template<> struct event_priority_traits<event_priority> { using priority_type = event_priority; static constexpr priority_type default_value = priority_type::NORMAL; };
 #else
 	using event_priority = NES_PRIORITY_TYPE;
 #ifndef NES_PRIORITY_TRAITS
