@@ -3,7 +3,7 @@ A single-header, thread-safe event system for modern C++.
 
 ## Usage
 ### Setup
-Currently, this library relies on [EnTT](https://github.com/skypjack/entt) and [magic_enum](https://github.com/Neargye/magic_enum), so make sure your project has those libraries available! The event system uses EnTT for its compile-time type hashing, which helps avoid problems with identifying functions and tracking them for listening/deafening. magic_enum is used in cases where enum iteration is useful, like storing event listeners based on priority.
+Currently, this library relies on [EnTT](https://github.com/skypjack/entt). The event system uses EnTT for its compile-time type hashing, which helps avoid problems with identifying functions and tracking them for listening/deafening.
 
 ### Creating an `nes::event_dispatcher`
 Typically you'd want just a single global `nes::event_dispatcher` instance. Having multiple is possible, but not currently supported. Due to how well this library works with concurrency, unless you absolutely cannot have a weak reference to the main event dispatcher, you'll probably just want to have the one instance. The dispatcher can be default-constructed like so:
@@ -105,7 +105,7 @@ private:
 	nes::event_dispatcher& mDispatcher;
 };
 ```
-By default, the priority is set to `nes::event_priority::NORMAL`. If you need more event priorities, you can define the `NES_PRIORITY_TYPE` with your own priority enum. It is expected that the `NORMAL` priority is available, so you'll probably want to define it in your own priority enum. Additionally, ensure to define the macro *before* including the header.
+By default, the priority is set to `nes::event_priority::NORMAL`. If you need more event priorities, you can define the `NES_PRIORITY_TYPE` with your own priority enum. It is expected that the `NORMAL` priority is available, so you'll probably want to define it in your own priority enum. Additionally, ensure to define the macro *before* including the header. Keep in mind that the smaller the actual value of the enum is, the higher of a priority it has. This means the enum with the value of 0 is triggered first.
 ```C++
 enum struct MyCustomPriorities {
 	IMMEDIATE,
@@ -118,6 +118,23 @@ enum struct MyCustomPriorities {
 // Include the library *after* defining the macro
 #include <nes/event_dispatcher.hpp>
 ``` 
+If you really need to change the default value, and your enum cannot contain a `NORMAL` value (ie. its casing doesn't match your project's code styling rules), you can override this requirement by specializing the `nes::event_priority_traits` template within the `NES_PRIORITY_TRAITS` macro.
+```C++
+enum struct MyCustomPriorities {
+	Immediate,
+	High,
+	Regular,
+	Low,
+	Last
+};
+#define NES_PRIORITY_TYPE MyCustomPriorities
+
+// Specialize the traits template
+#define NES_PRIORITY_TRAITS template<> struct nes::event_priority_traits<NES_PRIORITY_TYPE> { using priority_type = NES_PRIORITY_TYPE; static constexpr priority_type default_value = priority_type::Regular; };
+
+// Include the library *after* defining both of the macros
+#include <nes/event_dispatcher.hpp>
+```
 
 ## About
 ### Why

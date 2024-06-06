@@ -1,9 +1,9 @@
 #pragma once
 
 #include <entt/core/type_info.hpp>
-#include <magic_enum_utility.hpp>
 
 #include <functional>
+#include <map>
 #include <shared_mutex>
 
 /*
@@ -22,16 +22,27 @@ namespace nes {
 			typedef class_t type;
 			typedef return_t ret;
 		};
+
+		enum class standard_event_priority {
+			FIRST,
+			NORMAL,
+			LAST
+		};
 	}// namespace detail
 
+	template<typename priority_t> struct event_priority_traits { using priority_type = priority_t; };
+
 #ifndef NES_PRIORITY_TYPE
-	enum class event_priority {
-		FIRST,
-		NORMAL,
-		LAST
-	};
+	using event_priority = standard_event_priority;
+	template<> struct event_priority_traits<event_priority> { using priority_type = priority_t; static constexpr priority_type default_value = priority_type::NORMAL; };
 #else
 	using event_priority = NES_PRIORITY_TYPE;
+#ifndef NES_PRIORITY_TRAITS
+	template<> struct event_priority_traits<event_priority> { using priority_type = event_priority; static constexpr priority_type default_value = priority_type::NORMAL; };
+#else
+	// Define your own priority traits
+	NES_PRIORITY_TRAITS;
+#endif
 #endif
 
 	//Owns an event pointer, used to pass around an event
@@ -155,14 +166,14 @@ namespace nes {
 		const std::vector<listener_t>& getListeners() const {
 			return this->mListeners;
 		}
-		template<auto handler, auto priority = event_priority::NORMAL, typename class_t = detail::extract_type<decltype(handler)>::class_t, typename wrapper_t = event_wrapper<event_t>>
+		template<auto handler, auto priority = event_priority_traits<event_priority>::default_value, typename class_t = detail::extract_type<decltype(handler)>::class_t, typename wrapper_t = event_wrapper<event_t>>
 		void listen(class_t* instance) {
 			wrapper_t wrapper = [instance](event_t& e) {
 				(instance->*handler)(e);
 			};
 			mListeners[priority].emplace_back(instance, std::move(wrapper), entt::type_hash<decltype(handler)>::value());
 		}
-		template<auto priority = event_priority::NORMAL, typename wrapper_t = event_wrapper<event_t>>
+		template<auto priority = event_priority_traits<event_priority>::default_value, typename wrapper_t = event_wrapper<event_t>>
 		void listen(auto handler) {
 			wrapper_t wrapper = [handler](event_t& e) {
 				handler(e);
@@ -182,16 +193,16 @@ namespace nes {
 			}
 		}
 		void trigger(holder_t& holder) {
-			magic_enum::enum_for_each<event_priority>([&](auto priority) -> void {
-				for (const auto& listener: mListeners[priority]) {
+			for (auto& [priority, listeners] : mListeners) {
+				for (const auto& listener: listeners) {
 					listener.invoke(holder);
 				}
-			});
+			}
 		}
 
 	private:
 		//The event listeners for this dispatcher
-		std::unordered_map<event_priority, listener_list<listener_t>> mListeners;
+		std::map<event_priority, listener_list<listener_t>> mListeners;
 	};
 
 	//The main event dispatcher, use this to listen for and dispatch events
@@ -208,12 +219,12 @@ namespace nes {
 			disp.trigger(e);
 		}
 
-		template<typename event_t, auto handler, auto priority = nes::event_priority::NORMAL, typename class_t = nes::detail::extract_type<decltype(handler)>::class_t>
+		template<typename event_t, auto handler, auto priority = nes::event_priority_traits<event_priority>::default_value, typename class_t = nes::detail::extract_type<decltype(handler)>::class_t>
 		void listen(class_t* instance) const {
 			auto& disp = get<event_t>();
 			disp.template listen<handler, priority>(instance);
 		}
-		template<typename event_t, auto priority = nes::event_priority::NORMAL>
+		template<typename event_t, auto priority = nes::event_priority_traits<event_priority>::default_value>
 		void listen(auto handler) const {
 			auto& disp = get<event_t>();
 			disp.template listen<priority>(handler);
