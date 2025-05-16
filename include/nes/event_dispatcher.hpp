@@ -241,4 +241,19 @@ namespace nes {
 			disp.deafen(handler);
 		}
 	};
+
+	template<typename event_t, auto handler, auto priority = event_priority_traits<event_priority>::default_value, typename dispatcher_t = event_dispatcher>
+	struct scoped_listener {
+		constexpr explicit scoped_listener(dispatcher_t& disp) : mDispatcher{ disp } {
+			mDispatcher.template listen<event_t, &scoped_listener::listener, priority>(this);
+		}
+		constexpr ~scoped_listener() {
+			mDispatcher.template deafen<event_t, &scoped_listener::listener>(this);
+		}
+		constexpr void listener(event_t& e) const {
+			handler(e);
+		}
+	private:
+		dispatcher_t& mDispatcher;
+	};
 }// namespace nes

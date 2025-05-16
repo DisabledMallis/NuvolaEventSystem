@@ -78,6 +78,16 @@ dispatcher.listen<MyEvent>([](MyEvent& event) {
 });
 ```
 
+#### Scoped Listeners
+You can create listeners that deafen automatically once they're out of scope. In the example below, once the `listener` object is destroyed, the `example_print` function will no longer be listening for the `MyEvent` event.
+```C++
+void example_print(MyEvent& event) {
+	std::cout << "Hello, world!" << std::endl;
+}
+
+nes::scoped_listener<MyEvent, example_print> listener{ dispatcher };
+```
+
 ### Event Priorities
 By default, this library defines an `nes::event_priotity` enum. The values are `FIRST`, `NORMAL` and `LAST` by default. When an event is triggered, callbacks will be invoked in the order of their priorities first, then in a non-deterministic order after. You can specify the priority of the callback when listening for events by passing it in as the last template argument.
 ```C++
