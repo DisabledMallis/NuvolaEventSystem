@@ -2,3 +2,5 @@
 /cmake-build-debug
 /.idea
 /cmake-build-release
+/cmake-build-debug-clang
+/cmake-build-debug-gnu
