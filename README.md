@@ -3,7 +3,7 @@ A single-header, thread-safe event system for modern C++.
 
 ## Usage
 ### Setup
-Currently, this library relies on [EnTT](https://github.com/skypjack/entt). The event system uses EnTT for its compile-time type hashing, which helps avoid problems with identifying functions and tracking them for listening/deafening.
+Previously, this library relied on [EnTT](https://github.com/skypjack/entt). The event system used EnTT for its compile-time type hashing, which helped avoid problems with identifying functions and tracking them for listening/deafening. Fortunately, this is no longer a dependency for using this library.
 
 ### Creating an `nes::event_dispatcher`
 Typically you'd want just a single global `nes::event_dispatcher` instance. Having multiple is possible, but not currently supported. Due to how well this library works with concurrency, unless you absolutely cannot have a weak reference to the main event dispatcher, you'll probably just want to have the one instance. The dispatcher can be default-constructed like so:
