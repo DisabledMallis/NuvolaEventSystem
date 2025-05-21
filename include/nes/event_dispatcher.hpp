@@ -1,16 +1,48 @@
 #pragma once
 
-#include <entt/core/type_info.hpp>
-
 #include <functional>
 #include <map>
 #include <shared_mutex>
+
+#include <iostream>
+
+#if defined(__clang__) or defined(__GNUC__)
+#define NES_FUNCSIG __PRETTY_FUNCTION__
+#elif _MSC_VER
+#define NES_FUNCSIG __FUNCSIG__
+#endif
 
 /*
 * nes - Nuvola Event System
  */
 namespace nes {
 	namespace detail {
+		constexpr std::uint32_t fnv1a_hash(std::string_view str) {
+			std::uint32_t hash = 2166136261u;
+			for (std::size_t i = 0; i < str.length(); ++i) {
+				hash ^= static_cast<std::uint32_t>(str[i]);
+				hash *= 16777619u;
+			}
+			return hash;
+		}
+
+		template<typename type_t>
+		struct type_info {
+			static constexpr std::string_view name() {
+				constexpr std::string_view sig = NES_FUNCSIG;
+				constexpr auto cut = sig.substr(sig.find("[type_t = ") + 10);
+				return cut.substr(0, cut.find(']'));
+			}
+		};
+
+		template<typename type_t>
+		struct type_hash {
+			[[nodiscard]] static constexpr std::size_t value() {
+				constexpr auto name = type_info<type_t>::name();
+				return fnv1a_hash(name);
+			}
+		};
+
 		//Utils to extract type information
 		template<typename class_t = std::false_type>
 		struct extract_type {
@@ -80,7 +112,7 @@ namespace nes {
 		using holder_t = event_holder<event_t>;
 
 		event_listener() = delete;
-		event_listener(void* instance, wrapper_t&& wrapper, entt::id_type methodHash) : mInstance(instance), mMethod(std::move(wrapper)), mMethodHash(methodHash){};
+		event_listener(void* instance, wrapper_t&& wrapper, const std::size_t methodHash) : mInstance(instance), mMethod(std::move(wrapper)), mMethodHash(methodHash){};
 
 		void invoke(holder_t& holder) const {
 			mMethod(holder.ref());
@@ -88,7 +120,7 @@ namespace nes {
 
 		void* mInstance = nullptr;
 		wrapper_t mMethod{};
-		entt::id_type mMethodHash{};
+		std::size_t mMethodHash = 0;
 	};
 
 	template<typename base_iterator>
@@ -119,14 +151,14 @@ namespace nes {
 	template<typename listener_t>
 	struct listener_list {
 		using container_type = std::vector<listener_t>;
-		using value_type = container_type::value_type;
-		using allocator_type = container_type::allocator_type;
-		using size_type = container_type::size_type;
-		using difference_type = container_type::difference_type;
-		using reference = container_type::reference;
-		using const_reference = container_type::const_reference;
-		using pointer = container_type::pointer;
-		using const_pointer = container_type::const_pointer;
+		using value_type = typename container_type::value_type;
+		using allocator_type = typename container_type::allocator_type;
+		using size_type = typename container_type::size_type;
+		using difference_type = typename container_type::difference_type;
+		using reference = typename container_type::reference;
+		using const_reference = typename container_type::const_reference;
+		using pointer = typename container_type::pointer;
+		using const_pointer = typename container_type::const_pointer;
 		using iterator = listener_list_concurrent_iterator<typename container_type::iterator>;
 		using const_iterator = const listener_list_concurrent_iterator<typename container_type::const_iterator>;
 		using reverse_iterator = std::reverse_iterator<iterator>;
@@ -159,37 +191,37 @@ namespace nes {
 	template<typename event_t>
 	struct dispatcher {
 		using type_t = event_t;
-		using id_t = entt::type_hash<event_t>;
+		using id_t = detail::type_hash<event_t>;
 		using holder_t = event_holder<event_t>;
 		using listener_t = event_listener<event_t>;
 
 		const std::vector<listener_t>& getListeners() const {
 			return this->mListeners;
 		}
-		template<auto handler, auto priority = event_priority_traits<event_priority>::default_value, typename class_t = detail::extract_type<decltype(handler)>::class_t, typename wrapper_t = event_wrapper<event_t>>
+		template<auto handler, auto priority = event_priority_traits<event_priority>::default_value, typename class_t = typename detail::extract_type<decltype(handler)>::class_t, typename wrapper_t = event_wrapper<event_t>>
 		void listen(class_t* instance) {
 			wrapper_t wrapper = [instance](event_t& e) {
 				(instance->*handler)(e);
 			};
-			mListeners[priority].emplace_back(instance, std::move(wrapper), entt::type_hash<decltype(handler)>::value());
+			mListeners[priority].emplace_back(instance, std::move(wrapper), detail::type_hash<decltype(handler)>::value());
 		}
 		template<auto priority = event_priority_traits<event_priority>::default_value, typename wrapper_t = event_wrapper<event_t>>
 		void listen(auto handler) {
 			wrapper_t wrapper = [handler](event_t& e) {
 				handler(e);
 			};
-			mListeners[priority].emplace_back(nullptr, std::move(wrapper), entt::type_hash<decltype(handler)>::value());
+			mListeners[priority].emplace_back(nullptr, std::move(wrapper), detail::type_hash<decltype(handler)>::value());
 		}
-		template<typename handler_t, typename class_t = detail::extract_type<handler_t>::class_t>
+		template<typename handler_t, typename class_t = typename detail::extract_type<handler_t>::class_t>
 		void deafen(class_t* instance, handler_t&& handler) {
 			for (auto& [priority, theListeners]: mListeners) {
-				theListeners.erase_if([&](auto& listener) -> bool { return listener.mMethodHash == entt::type_hash<handler_t>::value(); });
+				theListeners.erase_if([&](auto& listener) -> bool { return listener.mMethodHash == detail::type_hash<handler_t>::value(); });
 			}
 		}
 		template<typename handler_t>
 		void deafen(handler_t handler) {
 			for (auto& [priority, theListeners]: mListeners) {
-				theListeners.erase_if([&](auto& listener) -> bool { return listener.mMethodHash == entt::type_hash<handler_t>::value(); });
+				theListeners.erase_if([&](auto& listener) -> bool { return listener.mMethodHash == detail::type_hash<handler_t>::value(); });
 			}
 		}
 		void trigger(holder_t& holder) {
@@ -209,28 +241,28 @@ namespace nes {
 	struct event_dispatcher {
 		template<typename event_t>
 		[[nodiscard]] auto& get() const {
-			static nes::dispatcher<event_t> instance;
+			static dispatcher<event_t> instance;
 			return instance;
 		}
 
 		template<typename event_t>
-		void trigger(nes::event_holder<event_t>& e) const {
+		void trigger(event_holder<event_t>& e) const {
 			auto& disp = get<event_t>();
 			disp.trigger(e);
 		}
 
-		template<typename event_t, auto handler, auto priority = nes::event_priority_traits<event_priority>::default_value, typename class_t = nes::detail::extract_type<decltype(handler)>::class_t>
+		template<typename event_t, auto handler, auto priority = event_priority_traits<event_priority>::default_value, typename class_t = typename detail::extract_type<decltype(handler)>::class_t>
 		void listen(class_t* instance) const {
 			auto& disp = get<event_t>();
 			disp.template listen<handler, priority>(instance);
 		}
-		template<typename event_t, auto priority = nes::event_priority_traits<event_priority>::default_value>
+		template<typename event_t, auto priority = event_priority_traits<event_priority>::default_value>
 		void listen(auto handler) const {
 			auto& disp = get<event_t>();
 			disp.template listen<priority>(handler);
 		}
 
-		template<typename event_t, auto handler, typename class_t = nes::detail::extract_type<decltype(handler)>::class_t>
+		template<typename event_t, auto handler, typename class_t = typename detail::extract_type<decltype(handler)>::class_t>
 		void deafen(class_t* instance) const {
 			auto& disp = get<event_t>();
 			disp.deafen(instance, static_cast<decltype(handler)>(handler));
