@@ -8,7 +8,7 @@
 
 #if defined(__clang__) or defined(__GNUC__)
 #define NES_FUNCSIG __PRETTY_FUNCTION__
-#elif _MSVC_VER
+#elif _MSC_VER
 #define NES_FUNCSIG __FUNCSIG__
 #endif
 
