@@ -39,6 +39,7 @@ namespace nes {
 		struct type_hash {
 			[[nodiscard]] static constexpr std::size_t value() {
 				constexpr auto name = type_info<type_t>::name();
+				std::cout << name << std::endl;
 				return fnv1a_hash(name);
 			}
 		};
@@ -215,7 +216,7 @@ namespace nes {
 		template<typename handler_t, typename class_t = typename detail::extract_type<handler_t>::class_t>
 		void deafen(class_t* instance, handler_t&& handler) {
 			for (auto& [priority, theListeners]: mListeners) {
-				theListeners.erase_if([&](auto& listener) -> bool { return listener.mMethodHash == detail::type_hash<handler_t>::value(); });
+				theListeners.erase_if([&](auto& listener) -> bool { return listener.mInstance == instance && listener.mMethodHash == detail::type_hash<handler_t>::value(); });
 			}
 		}
 		template<typename handler_t>

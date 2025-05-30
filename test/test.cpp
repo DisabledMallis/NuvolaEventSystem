@@ -45,16 +45,22 @@ private:
 };
 
 void object_test(nes::event_dispatcher& dispatcher) {
-	SomeClass instance { dispatcher };
+	SomeClass instanceA { dispatcher };
+	{
+		SomeClass instanceB { dispatcher };
+
+		auto event = nes::make_holder<MyEvent>();
+		dispatcher.trigger(event);
+
+		if (event->mCancel) {
+			std::cout << "Event cancelled!" << std::endl;
+		} else {
+			std::cout << "Event not cancelled!" << std::endl;
+		}
+	}
 
 	auto event = nes::make_holder<MyEvent>();
 	dispatcher.trigger(event);
-
-	if (event->mCancel) {
-		std::cout << "Event cancelled!" << std::endl;
-	} else {
-		std::cout << "Event not cancelled!" << std::endl;
-	}
 }
 
 static int scope_test_count = 0;
@@ -63,7 +69,12 @@ void scope_print(MyEvent& event) {
 	scope_test_count++;
 }
 void scope_test(nes::event_dispatcher& dispatcher) {
-	nes::scoped_listener<MyEvent, scope_print> listener{ dispatcher };
+	nes::scoped_listener<MyEvent, scope_print> listenerA{ dispatcher };
+	{
+		nes::scoped_listener<MyEvent, scope_print> listenerB{ dispatcher };
+		auto event = nes::make_holder<MyEvent>();
+		dispatcher.trigger(event);
+	}
 	auto event = nes::make_holder<MyEvent>();
 	dispatcher.trigger(event);
 }
@@ -94,10 +105,10 @@ int main() {
 	dispatcher.trigger(event);
 	std::cout << "After test trigger" << std::endl;
 
-	if (object_test_count != 3) {
-		std::cerr << "Object Test FAILED! Triggered more than intended!" << std::endl;
+	if (object_test_count != 9) {
+		std::cerr << "Object Test FAILED! Triggered more or less than intended!" << std::endl;
 	}
-	if (scope_test_count != 1) {
+	if (scope_test_count != 3) {
 		std::cerr << "Scope Test FAILED! Triggered more than intended!" << std::endl;
 	}
 	if (scope_lambda_count != 1) {
