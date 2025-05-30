@@ -81,7 +81,7 @@ namespace nes {
 	template<typename event_t>
 	struct event_holder {
 		template<typename... args_t>
-		explicit event_holder(args_t... args) : mEvent(args...){};
+		explicit event_holder(args_t&&... args) : mEvent(std::forward<args_t>(args)...){};
 
 		event_t* get() {
 			return &mEvent;
@@ -99,8 +99,8 @@ namespace nes {
 
 	//Creates an event holder instance
 	template<typename event_t, typename... args_t>
-	event_holder<event_t> make_holder(args_t... args) {
-		return event_holder<event_t>(args...);
+	event_holder<event_t> make_holder(args_t&&... args) {
+		return event_holder<event_t>(std::forward<args_t>(args)...);
 	}
 
 	//A type for holding the wrapper function that invokes the callback
