@@ -39,7 +39,6 @@ namespace nes {
 		struct type_hash {
 			[[nodiscard]] static constexpr std::size_t value() {
 				constexpr auto name = type_info<type_t>::name();
-				std::cout << name << std::endl;
 				return fnv1a_hash(name);
 			}
 		};
