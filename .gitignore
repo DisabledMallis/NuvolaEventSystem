@@ -6,3 +6,7 @@
 /cmake-build-debug-gnu
 /cmake-build-release-clang
 /cmake-build-release-gnu
+/cmake-build-debug-mingw
+/cmake-build-debug-msvc
+/cmake-build-release-mingw
+/cmake-build-release-msvc
