@@ -55,7 +55,7 @@ private:
 	nes::event_dispatcher& mDispatcher;
 };
 ```
-The `nes::event_dispatcher::listen` function takes in the event type to listen for as the first template argument, then the calback member function as the second. `this` gets passed in as the object instance to use in event callbacks. Because of this, you **must also deafen your events in the deconstructor** of the class. If you don't, and the event gets triggered, the function will be called with an invalid instance of the class.
+The `nes::event_dispatcher::listen` function takes in the event type to listen for as the first template argument, then the callback member function as the second. `this` gets passed in as the object instance to use in event callbacks. Because of this, you **must also deafen your events in the deconstructor** of the class. If you don't, and the event gets triggered, the function will be called with an invalid instance of the class.
 
 #### Listening for events with a lambda object
 This is a decent way to listen for events, but from here on, you won't be able to create some kind of destructor that automatically deafens your events. You'll have to **manually deafen your event listener when you don't need it**.
