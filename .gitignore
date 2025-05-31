@@ -4,3 +4,5 @@
 /cmake-build-release
 /cmake-build-debug-clang
 /cmake-build-debug-gnu
+/cmake-build-release-clang
+/cmake-build-release-gnu
